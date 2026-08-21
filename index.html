@@ -397,7 +397,7 @@
 <footer class="site-footer">
   <div class="foot-links">
     <a href="tel:+252613490055">📞 +252 61 3490055</a>
-    <a href="tel:+252613490066">📞 +252 61 3490066</a>
+    <a href="tel:+252613490066">📞 +252 770844167</a>
   </div>
   <div>© 2026 Baxnaano Hospital Pharmacy. Dhammaan xuquuqda way dhowran yihiin.</div>
 </footer>
@@ -413,6 +413,7 @@ const PH_ORDERS_KEY = "ph_orders";
 const PH_MEDS_KEY = "ph_medicines";
 const BJ_FARES_KEY = "ph_delivery_fares"; // isla xogta bajaaj_fares (Supabase) - shared fare data
 const HOSPITAL_DEGMADA = "Hodan"; // degmada uu ku yaal Baxnaano Hospital - saldhig loo isticmaalo xisaabinta delivery
+const USSD_SERVICE_CODE = "*55"; // FIXED: correct USSD flow for 55 service code
 const USSD_PAY_NUMBER = "684006666";
 const ADMIN_PIN_KEY = "ph_admin_pin";
 const DEGMO_LIST = ["Hodan","Wadajir","Dharkenley","Boondheere","Cabdicasiis","Shangaani","Xamar Weyne","Xamar Jajab","Waaberi","Warta Nabadda","Hawlwadaag","Yaaqshiid","Karaan","Deyniile","Huriwaa","Shibis","Wardhigley","Kaxda","Garasbaaley","Gubadley","Daarusalaam"]; // 17-ka degmo rasmiga ah + 4 xaafadood dheeraad ah oo dhinaca koonfur-galbeed
@@ -779,8 +780,8 @@ function submitPharmacyOrder(){
   //       Si toos ah, wax modal/su'aal ah lama muujiyo (isla habka booking-ga). =====
   let confirmMsg = "Pharmacy-ga Baxnaano ayaa dib kuula soo xiriiri doona si ay kuugu keenaan dawada.";
   if(total > 0){
-    const ussdCode = `*712*${USSD_PAY_NUMBER}*${total}#`;
-    const telUrl = 'tel:' + encodeURIComponent(ussdCode);
+    const ussdCode = `${USSD_SERVICE_CODE}*${USSD_PAY_NUMBER}*${total}#`;
+    const telUrl = `tel:${ussdCode}`;
     const dialAnchor = document.createElement('a');
     dialAnchor.href = telUrl;
     dialAnchor.style.display = 'none';
@@ -788,7 +789,7 @@ function submitPharmacyOrder(){
     dialAnchor.click();
     setTimeout(()=>{ if(dialAnchor.parentNode) document.body.removeChild(dialAnchor); }, 500);
     const feeNote = deliveryFee > 0 ? ` (dawo $${medTotal} + delivery $${deliveryFee})` : '';
-    confirmMsg = `Lacagta $${total}${feeNote} waa la wacayaa (USSD). Marka aad bixiso, dawadaada ayaa kuu la socon doonta.`;
+    confirmMsg = `Lacagta $${total}${feeNote} waa la wacayaa (USSD 55). Marka aad bixiso, dawadaada ayaa kuu la socon doonta.`;
   }
   document.getElementById('pharmacyConfirmMsg').textContent = confirmMsg;
   document.getElementById('pharmacyFormWrap').style.display = 'none';
