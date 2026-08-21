@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="so">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Baxnaano Pharmacy — Dalbo Dawada</title>
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b3d2e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bx Pharmacy">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+  // Fallback haddii SweetAlert2 uu ka waayo CDN-ka (internet la'aan/ad-blocker)
+  window.__PH_ALERT_FALLBACK__ = function(options){
+    const title = (options && (options.title || options.text || options.html)) ? (options.title || '') : '';
+    const message = [title, options && options.text ? options.text : ''].filter(Boolean).join('\n\n');
+    if(typeof window.alert === 'function') window.alert(message || 'OK');
+    return Promise.resolve({ isConfirmed: true, isDismissed: false, value: undefined });
+  };
+  if(!window.Swal){ window.Swal = { fire: window.__PH_ALERT_FALLBACK__ }; }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --pharm-deep:#0b3d2e; --pharm-mid:#0d9488; --pharm-bright:#14b8a6; --pharm-light:#5eead4;
+    --pharm-soft:#ecfdf5; --pharm-cream:#fbf9f4;
+    --navy:#0a2540; --gray-50:#f8fafc; --gray-100:#f1f5f9; --gray-200:#e2e8f0; --gray-300:#cbd5e1;
+    --gray-400:#94a3b8; --gray-500:#64748b; --gray-600:#475569; --gray-700:#334155; --text:#0f172a;
+    --danger:#ef4444; --warn:#f59e0b; --radius:16px; --radius-sm:10px;
+    --shadow:0 1px 3px rgba(0,0,0,0.05),0 10px 30px rgba(11,61,46,0.08);
+    --shadow-lg:0 4px 6px rgba(0,0,0,0.03),0 20px 40px rgba(11,61,46,0.14);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--pharm-cream);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;}
+  img{max-width:100%;display:block;}
+  a{color:inherit;text-decoration:none;}
+  button{font-family:inherit;cursor:pointer;}
+  input,select,textarea{font-family:inherit;font-size:14px;width:100%;padding:11px 12px;border-radius:var(--radius-sm);border:1.5px solid var(--gray-200);background:#fff;color:var(--text);outline:none;transition:border-color .15s;}
+  input:focus,select:focus,textarea:focus{border-color:var(--pharm-mid);}
+  label{display:block;font-size:12.5px;font-weight:700;color:var(--gray-600);margin:12px 0 5px;}
+  .muted{color:var(--gray-500);font-size:13.5px;}
+  .container{max-width:1080px;margin:0 auto;padding:0 20px;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  /* ===== HEADER / NAV ===== */
+  header.site-header{position:sticky;top:0;z-index:50;background:rgba(11,61,46,0.97);backdrop-filter:blur(6px);color:#fff;box-shadow:0 2px 12px rgba(0,0,0,0.08);}
+  .nav-wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;max-width:1080px;margin:0 auto;}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:900;font-size:18px;letter-spacing:.3px;}
+  .logo .emoji{font-size:24px;}
+  nav.main-nav{display:flex;gap:6px;align-items:center;}
+  nav.main-nav button{background:transparent;border:none;color:#d7f5ec;font-weight:700;font-size:13.5px;padding:9px 14px;border-radius:999px;transition:all .15s;}
+  nav.main-nav button:hover{background:rgba(255,255,255,0.08);}
+  nav.main-nav button.active{background:#fff;color:var(--pharm-deep);}
+
+  /* ===== HERO ===== */
+  .hero{position:relative;background:linear-gradient(135deg,#0b3d2e 0%,#0d5c47 55%,#0d9488 100%);color:#fff;overflow:hidden;padding:64px 20px 80px;}
+  .hero::before{content:"";position:absolute;top:-60px;right:-60px;width:280px;height:280px;background:rgba(255,255,255,0.06);border-radius:50%;}
+  .hero::after{content:"";position:absolute;bottom:-100px;left:-60px;width:320px;height:320px;background:rgba(255,255,255,0.05);border-radius:50%;}
+  .hero-inner{position:relative;z-index:1;max-width:640px;margin:0 auto;text-align:center;}
+  .hero-badge{display:inline-block;background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.25);padding:6px 16px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.4px;margin-bottom:18px;}
+  .hero h1{font-size:clamp(28px,5vw,42px);font-weight:900;line-height:1.15;margin-bottom:14px;}
+  .hero p{font-size:15.5px;color:#d7f5ec;margin-bottom:26px;}
+  .hero-cta{display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--pharm-deep);font-weight:800;font-size:15px;padding:15px 30px;border-radius:999px;border:none;box-shadow:0 10px 26px rgba(0,0,0,0.25);transition:transform .15s;}
+  .hero-cta:hover{transform:translateY(-2px);}
+  .hero-icons{display:flex;justify-content:center;gap:22px;margin-top:36px;flex-wrap:wrap;}
+  .hero-icon-item{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11.5px;color:#c9ede2;font-weight:600;}
+  .hero-icon-item .circ{width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:22px;}
+  .hero-compact{padding:36px 20px 44px;}
+  .hero-compact h1{font-size:clamp(22px,4vw,30px);margin-bottom:8px;}
+  .hero-compact p{margin-bottom:18px;}
+  .hero-compact .hero-icons{margin-top:24px;}
+  .hero-compact .hero-icon-item .circ{width:42px;height:42px;font-size:18px;}
+
+  .section-heading{text-align:center;max-width:520px;margin:0 auto 34px;}
+  .section-heading h2{font-size:26px;font-weight:900;color:var(--pharm-deep);margin-bottom:8px;}
+  .section-heading p{color:var(--gray-600);font-size:14px;}
+
+  /* ===== ORDER SECTION (replaces Products) ===== */
+  .order-section{padding:60px 20px 80px;background:#fff;}
+  .order-wrap{max-width:640px;margin:0 auto;}
+  .ph-card{background:#fff;border-radius:var(--radius);padding:22px;margin-bottom:16px;border:1px solid #e3f6f0;box-shadow:var(--shadow);}
+  .ph-card-title{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .ph-card-title .badge{width:36px;height:36px;border-radius:11px;background:var(--pharm-soft);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+  .ph-card-title h3{font-size:15.5px;font-weight:800;color:var(--pharm-deep);}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media (max-width:480px){.row2{grid-template-columns:1fr;}}
+  .upload-zone{border:2px dashed var(--pharm-light);border-radius:var(--radius-sm);padding:26px 14px;text-align:center;background:var(--pharm-soft);cursor:pointer;transition:all .18s;}
+  .upload-zone:hover{background:#d3f4ec;border-color:var(--pharm-mid);}
+  .upload-zone .icon{font-size:32px;margin-bottom:6px;}
+  .submit-btn{background:linear-gradient(135deg,var(--pharm-mid),var(--pharm-bright));border:none;color:#fff;font-weight:800;width:100%;padding:16px;border-radius:999px;font-size:15px;box-shadow:0 10px 24px rgba(13,148,136,.32);transition:transform .15s;}
+  .submit-btn:hover{transform:translateY(-2px);}
+
+  /* ===== MEDICINE GRID (bukaanka dooranaya) ===== */
+  .medicine-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;}
+  .med-card{position:relative;background:#fff;border:2px solid var(--gray-200);border-radius:14px;padding:10px;text-align:center;cursor:pointer;transition:all .18s cubic-bezier(.4,0,.2,1);animation:phFadeUp .4s ease both;}
+  .med-card:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:var(--pharm-light);}
+  .med-card.selected{border-color:var(--pharm-mid);background:var(--pharm-soft);box-shadow:0 0 0 3px rgba(13,148,136,0.12);}
+  .med-card .med-photo{width:100%;height:76px;object-fit:cover;border-radius:9px;margin-bottom:8px;background:var(--gray-100);}
+  .med-card .med-photo-placeholder{width:100%;height:76px;border-radius:9px;margin-bottom:8px;background:var(--pharm-soft);display:flex;align-items:center;justify-content:center;font-size:26px;}
+  .med-card .med-name{font-size:12px;font-weight:700;color:var(--pharm-deep);line-height:1.25;margin-bottom:3px;}
+  .med-card .med-price{font-size:12.5px;font-weight:900;color:var(--pharm-mid);}
+  .med-card .med-check{position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;background:var(--pharm-mid);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;animation:phPop .25s ease;}
+  .med-card.selected .med-check{display:flex;}
+  @keyframes phPop{from{transform:scale(0);}to{transform:scale(1);}}
+
+  /* ===== MEDS SHOWCASE — qeyb GAAR AH, caan ah, kor ku taal ===== */
+  .meds-showcase{position:relative;background:linear-gradient(160deg,#ecfdf5 0%,#d3f4ec 55%,#ecfdf5 100%);padding:56px 20px 64px;overflow:hidden;}
+  .meds-showcase::before{content:"💊";position:absolute;top:-20px;left:5%;font-size:80px;opacity:.08;transform:rotate(-15deg);}
+  .meds-showcase::after{content:"💊";position:absolute;bottom:-30px;right:5%;font-size:100px;opacity:.06;transform:rotate(20deg);}
+  .meds-showcase-inner{position:relative;z-index:1;max-width:1080px;margin:0 auto;}
+  .meds-showcase-badge{display:inline-block;background:var(--pharm-deep);color:#fff;padding:6px 16px;border-radius:999px;font-size:11.5px;font-weight:800;letter-spacing:.4px;margin-bottom:12px;animation:phFadeUp .4s ease both;box-shadow:0 6px 16px rgba(11,61,46,.25);}
+  .meds-showcase .section-heading h2{font-size:28px;}
+  .medicine-grid-showcase{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:16px;}
+  .medicine-grid-showcase .med-card{background:#fff;box-shadow:0 4px 14px rgba(11,61,46,.08);border-width:2px;}
+  .medicine-grid-showcase .med-card:hover{transform:translateY(-6px) scale(1.02);box-shadow:0 12px 28px rgba(11,61,46,.16);}
+  .medicine-grid-showcase .med-card .med-photo,.medicine-grid-showcase .med-card .med-photo-placeholder{height:120px;}
+  .medicine-grid-showcase .med-card:nth-child(1){animation-delay:.03s;} .medicine-grid-showcase .med-card:nth-child(2){animation-delay:.08s;}
+  .medicine-grid-showcase .med-card:nth-child(3){animation-delay:.13s;} .medicine-grid-showcase .med-card:nth-child(4){animation-delay:.18s;}
+  .medicine-grid-showcase .med-card:nth-child(5){animation-delay:.23s;} .medicine-grid-showcase .med-card:nth-child(6){animation-delay:.28s;}
+  .medicine-grid-showcase .med-card:nth-child(n+7){animation-delay:.33s;}
+  .meds-showcase-cta{animation:phFadeUp .5s ease both,phFloat 3.4s ease-in-out 1s infinite;}
+
+  /* ===== EXTRA ANIMATIONS (sitewide) ===== */
+  @keyframes phFadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes phFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
+  @keyframes phPulseRing{0%{box-shadow:0 0 0 0 rgba(20,184,166,0.4);}70%{box-shadow:0 0 0 14px rgba(20,184,166,0);}100%{box-shadow:0 0 0 0 rgba(20,184,166,0);}}
+  @keyframes phShine{0%{background-position:-200% 0;}100%{background-position:200% 0;}}
+  .hero-icon-item .circ{animation:phFloat 3.2s ease-in-out infinite;}
+  .hero-icon-item:nth-child(2) .circ{animation-delay:.3s;}
+  .hero-icon-item:nth-child(3) .circ{animation-delay:.6s;}
+  .hero-icon-item:nth-child(4) .circ{animation-delay:.9s;}
+  .ph-card{animation:phFadeUp .45s cubic-bezier(.16,1,.3,1) both;}
+  .ph-card:nth-of-type(1){animation-delay:.04s;} .ph-card:nth-of-type(2){animation-delay:.1s;}
+  .ph-card:nth-of-type(3){animation-delay:.16s;} .ph-card:nth-of-type(4){animation-delay:.22s;}
+  .upload-zone{animation:phPulseRing 2.6s infinite;}
+  .upload-zone:hover .icon{transform:scale(1.15) rotate(-4deg);}
+  .upload-zone .icon{display:inline-block;transition:transform .25s ease;}
+  #totalPriceBar{animation:phFadeUp .3s ease both;}
+  .success-icon{animation:phPop .4s cubic-bezier(.34,1.56,.64,1) both;}
+  .ghost-btn{background:transparent;border:1.5px solid var(--gray-200);color:var(--gray-600);font-weight:700;padding:11px 16px;border-radius:999px;font-size:13px;}
+  .success-icon{font-size:52px;margin-bottom:10px;}
+
+  /* ===== FOOTER ===== */
+  footer.site-footer{background:var(--pharm-deep);color:#bcded4;padding:30px 20px;text-align:center;font-size:13px;}
+  footer.site-footer .foot-links{display:flex;justify-content:center;gap:16px;margin-bottom:10px;flex-wrap:wrap;}
+  footer.site-footer .foot-links a{color:#e3f6f0;font-weight:600;}
+
+  /* ===== TOAST ===== */
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--pharm-deep);color:#fff;padding:12px 20px;border-radius:var(--radius-sm);font-size:13.5px;font-weight:600;box-shadow:var(--shadow-lg);z-index:300;opacity:0;transition:all 0.3s cubic-bezier(0.4,0,0.2,1);pointer-events:none;white-space:nowrap;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .admin-stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
+
+  /* ===== MOBILE / SMALL DEVICE RESPONSIVENESS ===== */
+  @media (max-width:600px){
+    .nav-wrap{padding:12px 16px;}
+    nav.main-nav button{padding:8px 10px;font-size:12.5px;}
+    .logo{font-size:15px;}
+    .logo .emoji{font-size:20px;}
+    .hero{padding:44px 16px 56px;}
+    .hero-compact{padding:28px 16px 34px;}
+    .hero h1{font-size:24px;}
+    .hero p{font-size:14px;}
+    .hero-cta{padding:13px 22px;font-size:14px;width:100%;justify-content:center;}
+    .hero-icons{gap:14px;}
+    .hero-icon-item{font-size:10.5px;}
+    .hero-icon-item .circ{width:42px;height:42px;font-size:18px;}
+    .meds-showcase{padding:32px 14px 40px;}
+    .meds-showcase .section-heading h2{font-size:21px;}
+    .medicine-grid,.medicine-grid-showcase{grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:9px;}
+    .medicine-grid-showcase .med-card .med-photo,.medicine-grid-showcase .med-card .med-photo-placeholder{height:88px;}
+    .med-card{padding:7px;}
+    .med-card .med-name{font-size:11px;}
+    .order-section{padding:36px 14px 50px;}
+    .ph-card{padding:16px;}
+    .admin-stat-grid{grid-template-columns:repeat(2,1fr);}
+    table{font-size:12px;}
+    #pharmacyDetailModal > div{padding:16px;max-width:100%;}
+    footer.site-footer .foot-links{flex-direction:column;gap:8px;}
+  }
+  @media (max-width:360px){
+    .medicine-grid,.medicine-grid-showcase{grid-template-columns:repeat(2,1fr);}
+    .admin-stat-grid{grid-template-columns:repeat(2,1fr);}
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER / NAV -->
+<header class="site-header">
+  <div class="nav-wrap">
+    <div class="logo"><img src="icon-192.png" alt="Baxnaano" style="width:26px;height:26px;border-radius:6px;"> BAXNAANO <span style="font-weight:400;">PHARMACY</span></div>
+    <nav class="main-nav">
+      <button id="navHomeBtn" class="active" onclick="switchView('home')">Guriga</button>
+      <button id="navAdminBtn" onclick="switchView('admin')">Admin</button>
+      <button id="installBtn" onclick="triggerInstall()" style="display:none;background:#fff;color:var(--pharm-deep);">⬇️ Install</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<!-- ==================== HOME VIEW (Hero + About + Services + Order, isku mid) ==================== -->
+<div id="view-home" class="view active">
+
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-badge">🏥 Baxnaano Hospital — Pharmacy</div>
+      <h1>Dawadaada Waan Kuu Keeni</h1>
+      <p>Soo geli warqadda dhakhtarku kuu qoray (prescription), waana kuu diyaarin doonaa dawada oo kuu keeni doonaa.</p>
+      <button class="hero-cta" onclick="document.getElementById('meds-anchor').scrollIntoView({behavior:'smooth'})">💊 Dooro Dawada Hadda →</button>
+      <div class="hero-icons">
+        <div class="hero-icon-item"><div class="circ">📋</div>Prescription Upload</div>
+        <div class="hero-icon-item"><div class="circ">⚡</div>Adeeg Degdeg ah</div>
+        <div class="hero-icon-item"><div class="circ">🚚</div>Delivery</div>
+        <div class="hero-icon-item"><div class="circ">🩺</div>Talo Caafimaad</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== DOORO DAWOOYINKA ===== -->
+  <section class="meds-showcase" id="meds-anchor">
+    <div class="meds-showcase-inner">
+      <div class="section-heading">
+        <div class="meds-showcase-badge">💊 Dawooyinka Nooca Ugu Fiican</div>
+        <h2>Dooro Dawooyinka</h2>
+        <p>Riix dawada aad rabto si aad ugu darto dalabkaaga — sawirka, magaca, iyo qiimaha ayaad arki doontaa</p>
+      </div>
+      <div style="max-width:400px;margin:0 auto 18px;position:relative;">
+        <input type="text" id="medSearchInput" placeholder="🔍 Raadi dawada..." oninput="filterMedicines(this.value)" style="padding-left:16px;">
+      </div>
+      <div id="medicineGrid" class="medicine-grid medicine-grid-showcase"></div>
+      <div id="medicineEmpty" class="muted" style="display:none;text-align:center;padding:26px;">Weli wax dawo ah lama gelin nidaamka.</div>
+      <div id="medicineNoResults" class="muted" style="display:none;text-align:center;padding:26px;">Wax dawo ah lama helin oo la mid ah raadintaada.</div>
+      <div style="text-align:center;margin-top:26px;">
+        <button class="hero-cta meds-showcase-cta" onclick="document.getElementById('order-anchor').scrollIntoView({behavior:'smooth'})">✅ Sii Wad Dalabka →</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="order-section" id="order-anchor">
+    <div class="order-wrap">
+      <div class="section-heading">
+        <h2>💊 Dalbo Dawadaada</h2>
+        <p>Buuxi foomka hoose oo soo geli sawirka warqadda dawada</p>
+      </div>
+
+      <div id="pharmacyFormWrap">
+        <div class="ph-card">
+          <div class="ph-card-title"><span class="badge">👤</span><h3>Xogtaada</h3></div>
+          <label>Magaca oo dhamaystiran</label>
+          <input type="text" id="phName" placeholder="Tusaale: Cali Xasan Mohamed">
+          <div class="row2">
+            <div><label>Lambarka Telefoonka</label><input type="tel" id="phPhone" placeholder="06XXXXXXXX" inputmode="tel"></div>
+            <div><label>Degmada</label><select id="phDegmada" onchange="updateDeliveryFee()"><option value="">-- Dooro Degmada --</option></select></div>
+          </div>
+        </div>
+
+        <div class="ph-card">
+          <div class="ph-card-title"><span class="badge">📋</span><h3>Warqadda Dawada (Prescription)</h3></div>
+          <p class="muted" style="margin-bottom:12px;">Soo geli sawir cad oo warqadda dhakhtarku kuu qoray (ama liiska dawooyinka aad u baahan tahay).</p>
+          <input type="file" accept="image/*" id="phRxInput" style="display:none" onchange="handleRxUpload(event)">
+          <div class="upload-zone" onclick="document.getElementById('phRxInput').click()" id="phUploadZone">
+            <div class="icon">🖼️</div>
+            <div style="font-weight:700;color:var(--pharm-deep);font-size:14px;">Riix si aad sawir u soo geliso</div>
+            <div class="muted" style="font-size:12px;margin-top:2px;">JPG, PNG — sawir cad</div>
+          </div>
+          <div id="phRxPreviewWrap" style="display:none;margin-top:12px;text-align:center;">
+            <img id="phRxPreview" style="max-width:100%;max-height:260px;border-radius:10px;border:2px solid var(--pharm-light);">
+            <div><button class="ghost-btn" style="margin-top:8px;" onclick="clearRxUpload()">✕ Ka saar sawirka</button></div>
+          </div>
+        </div>
+
+        <div class="ph-card">
+          <div class="ph-card-title"><span class="badge">📝</span><h3>Faahfaahin Dheeraad ah (ikhtiyaari)</h3></div>
+          <textarea id="phNotes" rows="3" placeholder="Tusaale: Liiska dawooyinka, ama wax faahfaahin ah..."></textarea>
+        </div>
+
+        <div id="selectedMedsPreview" style="display:none;margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;"></div>
+        <div id="totalPriceBar" style="display:none;background:linear-gradient(135deg,var(--pharm-deep),var(--pharm-mid));color:#fff;border-radius:var(--radius);padding:16px 20px;margin-bottom:14px;">
+          <div id="priceBreakdown" style="font-size:12px;opacity:.9;margin-bottom:6px;"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-weight:700;font-size:14px;">💵 Wadarta Lacagta</span>
+            <span style="font-weight:900;font-size:22px;" id="totalPriceValue">$0</span>
+          </div>
+        </div>
+
+        <button class="submit-btn" onclick="submitPharmacyOrder()">✅ Dir Dalabka & Bixi Lacagta</button>
+      </div>
+
+      <div id="pharmacyConfirmWrap" style="display:none;">
+        <div class="ph-card" style="text-align:center;">
+          <div class="success-icon">✅</div>
+          <h3 style="color:var(--pharm-deep);margin-bottom:6px;">Dalabkaaga waa la diray!</h3>
+          <p class="muted" id="pharmacyConfirmMsg">Pharmacy-ga Baxnaano ayaa dib kuula soo xiriiri doona si ay kuugu keenaan dawada.</p>
+        </div>
+        <button class="ghost-btn" style="width:100%;padding:14px;" onclick="resetPharmacyForm()">➕ Dalab Cusub</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ==================== ADMIN VIEW ==================== -->
+<div id="view-admin-login" class="view">
+  <section class="order-section">
+    <div class="order-wrap" style="max-width:380px;">
+      <div class="ph-card">
+        <div class="ph-card-title"><span class="badge">🔒</span><h3>Admin Login</h3></div>
+        <label>PIN</label>
+        <input type="password" id="adminPinInput" placeholder="••••••">
+        <button class="submit-btn" style="margin-top:14px;" onclick="tryAdminLogin()">Gal</button>
+        <p class="muted" style="margin-top:12px;text-align:center;">PIN-ka hore u dhigan: <b style="color:var(--pharm-deep);">ANAANI321</b></p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="view-admin-dashboard" class="view">
+  <section class="order-section">
+    <div class="container">
+      <div id="adminSyncWarning" style="display:none;background:#fee2e2;border:2px solid #dc2626;border-radius:12px;padding:14px;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:24px;">⚠️</span>
+          <div style="flex:1;">
+            <div style="font-weight:800;color:#991b1b;">Sync-ku wuu fashilmay — xogtu Supabase ma gaadhin!</div>
+            <div style="font-size:12.5px;color:#7f1d1d;margin-top:2px;" id="adminSyncWarningDetail"></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+        <h2 style="color:var(--pharm-deep);font-size:20px;">💊 Admin Dashboard</h2>
+        <button class="ghost-btn" onclick="adminLogout()">🚪 Logout</button>
+      </div>
+
+      <!-- ===== MEDICINE CATALOG MANAGEMENT (gooni ah, kala go'an dalabyada) ===== -->
+      <div style="border:1.5px solid #99f6e4;border-radius:var(--radius);background:linear-gradient(180deg,var(--pharm-soft),#fff);padding:18px;margin-bottom:22px;">
+        <h3 style="color:var(--pharm-deep);font-size:16px;margin-bottom:14px;">🧾 Maamul Dawooyinka</h3>
+        <div class="row2">
+          <div><label style="margin-top:0;">Magaca Dawada</label><input type="text" id="medName" placeholder="Tusaale: Paracetamol"></div>
+          <div><label style="margin-top:0;">Qiimaha ($)</label><input type="number" id="medPrice" min="0" step="0.01" placeholder="Tusaale: 5"></div>
+        </div>
+        <label>Sawirka Dawada</label>
+        <input type="file" accept="image/*" id="medPhotoInput" style="display:none" onchange="handleMedPhotoUpload(event)">
+        <div class="upload-zone" style="padding:14px;" onclick="document.getElementById('medPhotoInput').click()" id="medUploadZone">
+          <div class="icon" style="font-size:22px;margin-bottom:2px;">🖼️</div>
+          <div style="font-weight:700;color:var(--pharm-deep);font-size:13px;">Riix si aad sawirka dawada u soo geliso</div>
+        </div>
+        <div id="medPhotoPreviewWrap" style="display:none;margin-top:10px;text-align:center;">
+          <img id="medPhotoPreview" style="max-width:140px;max-height:140px;border-radius:10px;border:2px solid var(--pharm-light);">
+          <div><button class="ghost-btn" style="margin-top:6px;padding:6px 12px;font-size:12px;" onclick="clearMedPhoto()">✕ Ka saar</button></div>
+        </div>
+        <button class="submit-btn" style="margin-top:14px;" onclick="addMedicine()">➕ Ku Dar Dawada</button>
+
+        <div id="adminMedsGrid" class="medicine-grid" style="margin-top:18px;"></div>
+        <div id="adminMedsEmpty" class="muted" style="display:none;text-align:center;padding:14px;">Weli wax dawo ah lama gelin.</div>
+      </div>
+
+      <div class="admin-stat-grid">
+        <div class="ph-card" style="text-align:center;padding:14px 6px;"><div style="font-size:20px;font-weight:900;color:var(--pharm-deep);" id="phStatTotal">0</div><div class="muted" style="font-size:11px;text-transform:uppercase;">Total</div></div>
+        <div class="ph-card" style="text-align:center;padding:14px 6px;"><div style="font-size:20px;font-weight:900;color:var(--pharm-deep);" id="phStatPending">0</div><div class="muted" style="font-size:11px;text-transform:uppercase;">Pending</div></div>
+        <div class="ph-card" style="text-align:center;padding:14px 6px;"><div style="font-size:20px;font-weight:900;color:var(--pharm-deep);" id="phStatProcessing">0</div><div class="muted" style="font-size:11px;text-transform:uppercase;">Socda</div></div>
+        <div class="ph-card" style="text-align:center;padding:14px 6px;"><div style="font-size:20px;font-weight:900;color:var(--pharm-deep);" id="phStatDone">0</div><div class="muted" style="font-size:11px;text-transform:uppercase;">Dhammaystiran</div></div>
+      </div>
+
+      <div class="ph-card" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:center;" id="phChartWrap"></div>
+
+      <div class="ph-card">
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+            <thead><tr style="text-align:left;color:var(--gray-500);font-size:11.5px;text-transform:uppercase;border-bottom:1.5px solid var(--gray-200);">
+              <th style="padding:8px 6px;">Bukaanka</th><th style="padding:8px 6px;">Telefoon</th><th style="padding:8px 6px;">Taariikh</th><th style="padding:8px 6px;">Lacagta</th><th style="padding:8px 6px;">Status</th><th style="padding:8px 6px;"></th>
+            </tr></thead>
+            <tbody id="pharmacyTableBody"></tbody>
+          </table>
+        </div>
+        <div id="pharmacyEmpty" style="display:none;text-align:center;padding:40px 16px;color:var(--gray-400);"><span style="font-size:40px;display:block;margin-bottom:10px;opacity:.5;">💊</span>Wax dalab dawo ah lama helin.</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+</main>
+
+<!-- PHARMACY ORDER DETAIL MODAL -->
+<div id="pharmacyDetailModal" style="display:none;position:fixed;inset:0;background:rgba(11,61,46,0.6);z-index:200;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:16px;padding:20px;max-width:400px;width:100%;max-height:85vh;overflow-y:auto;" id="pharmacyDetailContent"></div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<footer class="site-footer">
+  <div class="foot-links">
+    <a href="tel:+252613490055">📞 +252 61 3490055</a>
+    <a href="tel:+252613490066">📞 +252 61 3490066</a>
+  </div>
+  <div>© 2026 Baxnaano Hospital Pharmacy. Dhammaan xuquuqda way dhowran yihiin.</div>
+</footer>
+
+<script>
+/* ============================================================
+   BAXNAANO PHARMACY — App gooni ah (kala go'an booking-ga)
+   Wuxuu isticmaalaa isla Supabase project-ka (table: pharmacy_orders)
+   ============================================================ */
+const SUPABASE_URL = 'https://tpmsyyhrnciqqcxlfamr.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_exzgU4lfqJpzI89f8Jjl7w_5vT2d4NR';
+const PH_ORDERS_KEY = "ph_orders";
+const PH_MEDS_KEY = "ph_medicines";
+const BJ_FARES_KEY = "ph_delivery_fares"; // isla xogta bajaaj_fares (Supabase) - shared fare data
+const HOSPITAL_DEGMADA = "Hodan"; // degmada uu ku yaal Baxnaano Hospital - saldhig loo isticmaalo xisaabinta delivery
+const USSD_PAY_NUMBER = "684006666";
+const ADMIN_PIN_KEY = "ph_admin_pin";
+const DEGMO_LIST = ["Hodan","Wadajir","Dharkenley","Boondheere","Cabdicasiis","Shangaani","Xamar Weyne","Xamar Jajab","Waaberi","Warta Nabadda","Hawlwadaag","Yaaqshiid","Karaan","Deyniile","Huriwaa","Shibis","Wardhigley","Kaxda","Garasbaaley","Gubadley","Daarusalaam"]; // 17-ka degmo rasmiga ah + 4 xaafadood dheeraad ah oo dhinaca koonfur-galbeed
+// Degmooyinka AAD U FOG (koonfur-galbeed iyo kuwa kale ee fog) — waxay
+// heli doonaan qiimaha "fog" (sarreeya), ma aha "dhow" (hoose) ee caadiga ah.
+const FAR_DEGMOOYIN = new Set(["Kaxda","Garasbaaley","Gubadley","Daarusalaam","Huriwaa","Karaan","Deyniile","Yaaqshiid"]);
+const SPECIAL_FEES = { "Cabdicasiis": 2.50 }; // degmooyin leh qiimo gaar ah oo aan la mid ahayn heerarka guud
+
+function uid(prefix){ return prefix + "-" + Math.random().toString(36).slice(2,7).toUpperCase(); }
+function escapeHtml(text){ const div = document.createElement('div'); div.textContent = text||''; return div.innerHTML; }
+function fmtDate(d){ if(!d) return ""; const dt = new Date(d); if(isNaN(dt)) return d; return dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
+function load(key, fallback){ try{ const v = JSON.parse(localStorage.getItem(key)); return (v===null||v===undefined) ? fallback : v; }catch(e){ return fallback; } }
+function save(key, val){ localStorage.setItem(key, JSON.stringify(val)); if(typeof DB!=='undefined' && DB.enabled) DB.persist(key, val); }
+function toast(msg){ const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 2500); }
+/* ILAALIN MUHIIM AH: marnaba xog Supabase laga soo qaatay ha lagu
+   qaridin (overwrite) xog HORAY U JIRTAY local-ka haddii xogta cusub
+   ay tahay MADHAN — waxay noqon kartaa khalad ku meel gaar ah, ma aha
+   in dhab ahaan dhammaan xogtu la tirtiray. */
+function safeApplyPull(key, records){
+  const existing = load(key, null);
+  const existingCount = Array.isArray(existing) ? existing.length : 0;
+  const newCount = Array.isArray(records) ? records.length : 0;
+  if(newCount === 0 && existingCount > 0){
+    throw new Error(`Pull for ${key} returned empty while ${existingCount} record(s) already exist locally — refusing to overwrite (safety guard)`);
+  }
+  localStorage.setItem(key, JSON.stringify(records));
+}
+
+/* ==================== SUPABASE SYNC ==================== */
+const DB = {
+  enabled:false, client:null, status:'idle', lastError:null, _persistQueue:Promise.resolve(), _pullDebounce:null,
+  async init(){
+    if(typeof supabase === 'undefined'){ this.status='local'; updateSyncUI(); return; }
+    try{
+      this.client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const ordersOk = await this._pullWithRetry('pharmacy_orders', PH_ORDERS_KEY, mapOrderRow);
+      const medsOk = await this._pullWithRetry('pharmacy_medicines', PH_MEDS_KEY, mapMedRow);
+      const faresOk = await this._pullWithRetry('bajaaj_fares', BJ_FARES_KEY, mapFareRow);
+      this.enabled = true;
+      this.subscribeAll();
+      if(!ordersOk || !medsOk || !faresOk){
+        this.status='error'; this.lastError = 'Xogta lama helin (dalabyada, dawooyinka, ama qiimaha delivery-ga).';
+      } else {
+        this.status = 'connected';
+      }
+      updateSyncUI();
+    }catch(err){
+      this.status='error'; this.lastError = err.message||String(err);
+      updateSyncUI();
+    }
+  },
+  async _pullWithRetry(table, key, mapFn){
+    let success = false;
+    for(let attempt=1; attempt<=3 && !success; attempt++){
+      try{
+        const { data, error } = await this.client.from(table).select('*');
+        if(error) throw error;
+        const records = (data||[]).map(mapFn);
+        safeApplyPull(key, records);
+        success = true;
+      }catch(err){
+        if(attempt<3) await new Promise(r=>setTimeout(r, 500*attempt));
+      }
+    }
+    return success;
+  },
+  subscribeAll(){
+    if(!this.client) return;
+    const channel = this.client.channel('ph_realtime');
+    channel.on('postgres_changes', {event:'*', schema:'public', table:'pharmacy_orders'}, ()=> this.handleChange('pharmacy_orders'));
+    channel.on('postgres_changes', {event:'*', schema:'public', table:'pharmacy_medicines'}, ()=> this.handleChange('pharmacy_medicines'));
+    channel.on('postgres_changes', {event:'*', schema:'public', table:'bajaaj_fares'}, ()=> this.handleChange('bajaaj_fares'));
+    channel.subscribe();
+  },
+  handleChange(table){
+    clearTimeout(this._pullDebounce);
+    this._pullDebounce = setTimeout(async ()=>{
+      try{
+        if(table === 'pharmacy_medicines'){
+          const { data, error } = await this.client.from('pharmacy_medicines').select('*');
+          if(error) throw error;
+          safeApplyPull(PH_MEDS_KEY, (data||[]).map(mapMedRow));
+          renderMedicineList();
+          const adminVisible = document.getElementById('view-admin-dashboard').classList.contains('active');
+          if(adminVisible) renderAdminMedsList();
+        } else if(table === 'bajaaj_fares'){
+          const { data, error } = await this.client.from('bajaaj_fares').select('*');
+          if(error) throw error;
+          safeApplyPull(BJ_FARES_KEY, (data||[]).map(mapFareRow));
+          updateDeliveryFee();
+        } else {
+          const { data, error } = await this.client.from('pharmacy_orders').select('*');
+          if(error) throw error;
+          const records = (data||[]).map(mapOrderRow).sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+          safeApplyPull(PH_ORDERS_KEY, records);
+          const adminVisible = document.getElementById('view-admin-dashboard').classList.contains('active');
+          if(adminVisible) renderAdminDashboard();
+        }
+      }catch(err){ console.warn('Realtime re-pull failed', err); }
+    }, 400);
+  },
+  async persist(key, data){
+    if(!this.enabled || !this.client) return;
+    if(key !== PH_ORDERS_KEY && key !== PH_MEDS_KEY) return;
+    this._persistQueue = this._persistQueue.then(async ()=>{
+      try{
+        const fn = key === PH_ORDERS_KEY ? upsertPharmacyOrders : upsertPharmacyMedicines;
+        await Promise.race([
+          fn(data),
+          new Promise((_,reject)=> setTimeout(()=> reject(new Error('Persist timeout (15s)')), 15000))
+        ]);
+        if(this.status === 'error'){ this.status = 'connected'; this.lastError = null; updateSyncUI(); }
+      }catch(err){
+        this.status='error'; this.lastError = err.message||String(err);
+        updateSyncUI(); console.warn('Supabase persist failed', err);
+      }
+    });
+    return this._persistQueue;
+  }
+};
+function mapOrderRow(r){ return { id:r.id, createdAt:r.created_at, name:r.patient_name||'', phone:r.phone||'', degmada:r.degmada||'', notes:r.notes||'', rxImage:r.rx_image||'', status:r.status||'Pending', selectedMeds:(()=>{try{return JSON.parse(r.selected_medicines||'[]');}catch(e){return [];}})(), deliveryFee:r.delivery_fee||0, totalPrice:r.total_price||0 }; }
+function mapMedRow(r){ return { id:r.id, createdAt:r.created_at, name:r.name||'', price:r.price||0, photo:r.photo||'' }; }
+function mapFareRow(r){ return { degmada:r.degmada, gudahaMin:r.gudaha_min, gudahaMax:r.gudaha_max, dhowMin:r.dhow_min, dhowMax:r.dhow_max, fogMin:r.fog_min, fogMax:r.fog_max }; }
+async function upsertPharmacyOrders(records){
+  const rows = records.map(o=>({ id:o.id, created_at:o.createdAt||new Date().toISOString(), patient_name:o.name||null, phone:o.phone||null, degmada:o.degmada||null, notes:o.notes||null, rx_image:o.rxImage||null, status:o.status||'Pending', selected_medicines:JSON.stringify(o.selectedMeds||[]), delivery_fee:o.deliveryFee||0, total_price:o.totalPrice||0 }));
+  if(rows.length){
+    const { error } = await DB.client.from('pharmacy_orders').upsert(rows, {onConflict:'id'});
+    if(error) throw error;
+  }
+  // Nadaafadda xogta duugga ah (orphan cleanup) — background, ma aan sugeynin.
+  (async ()=>{
+    try{
+      const { data: existing } = await DB.client.from('pharmacy_orders').select('id');
+      const currentIds = rows.map(r=>r.id);
+      const toDelete = (existing||[]).map(r=>r.id).filter(id=>!currentIds.includes(id));
+      if(toDelete.length) await DB.client.from('pharmacy_orders').delete().in('id', toDelete);
+    }catch(e){ console.warn('Orphan cleanup failed', e); }
+  })();
+}
+async function upsertPharmacyMedicines(records){
+  const rows = records.map(m=>({ id:m.id, created_at:m.createdAt||new Date().toISOString(), name:m.name||null, price:m.price||0, photo:m.photo||null }));
+  if(rows.length){
+    const { error } = await DB.client.from('pharmacy_medicines').upsert(rows, {onConflict:'id'});
+    if(error) throw error;
+  }
+  (async ()=>{
+    try{
+      const { data: existing } = await DB.client.from('pharmacy_medicines').select('id');
+      const currentIds = rows.map(r=>r.id);
+      const toDelete = (existing||[]).map(r=>r.id).filter(id=>!currentIds.includes(id));
+      if(toDelete.length) await DB.client.from('pharmacy_medicines').delete().in('id', toDelete);
+    }catch(e){ console.warn('Orphan cleanup failed', e); }
+  })();
+}
+function updateSyncUI(){
+  const warnEl = document.getElementById('adminSyncWarning');
+  if(!warnEl) return;
+  if(DB.status === 'error'){
+    warnEl.style.display = 'block';
+    document.getElementById('adminSyncWarningDetail').textContent = DB.lastError || 'Khalad aan la aqoon ayaa dhacay.';
+  } else {
+    warnEl.style.display = 'none';
+  }
+}
+function retrySyncIfNeeded(){
+  if(!DB.enabled || !DB.client) return;
+  const orders = load(PH_ORDERS_KEY, null);
+  if(orders !== null) DB.persist(PH_ORDERS_KEY, orders);
+  const meds = load(PH_MEDS_KEY, null);
+  if(meds !== null) DB.persist(PH_MEDS_KEY, meds);
+  DB.handleChange('pharmacy_orders');
+  DB.handleChange('pharmacy_medicines');
+}
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'visible') retrySyncIfNeeded(); });
+window.addEventListener('pageshow', retrySyncIfNeeded);
+window.addEventListener('focus', retrySyncIfNeeded);
+
+/* ==================== NAV / VIEW SWITCHING ==================== */
+function switchView(view){
+  ['navHomeBtn','navAdminBtn'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  ['view-home','view-admin-login','view-admin-dashboard'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  if(view==='home'){
+    document.getElementById('navHomeBtn').classList.add('active');
+    document.getElementById('view-home').classList.add('active');
+    populateDegmadaSelect();
+    renderMedicineList();
+  } else {
+    document.getElementById('navAdminBtn').classList.add('active');
+    const loggedIn = sessionStorage.getItem('ph_admin_logged') === '1';
+    if(loggedIn){
+      document.getElementById('view-admin-dashboard').classList.add('active');
+      renderAdminDashboard();
+      renderAdminMedsList();
+      updateSyncUI();
+      retrySyncIfNeeded();
+    } else {
+      document.getElementById('view-admin-login').classList.add('active');
+    }
+  }
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function populateDegmadaSelect(){
+  const sel = document.getElementById('phDegmada');
+  if(sel && sel.options.length <= 1){
+    sel.innerHTML = '<option value="">-- Dooro Degmada --</option>' + DEGMO_LIST.map(d=>`<option value="${d}">${d}</option>`).join('');
+  }
+}
+
+/* ==================== ORDER FORM (bukaanka) ==================== */
+/* ==================== DAWOOYINKA — dooridda bukaanka ==================== */
+let selectedMedicineIds = new Set();
+function renderMedicineList(){
+  const meds = load(PH_MEDS_KEY, []);
+  const grid = document.getElementById('medicineGrid');
+  const empty = document.getElementById('medicineEmpty');
+  const noResults = document.getElementById('medicineNoResults');
+  if(!grid) return;
+  if(meds.length === 0){ grid.innerHTML=''; if(empty) empty.style.display='block'; if(noResults) noResults.style.display='none'; return; }
+  if(empty) empty.style.display='none';
+  const query = (document.getElementById('medSearchInput')?.value || '').trim().toLowerCase();
+  const filtered = query ? meds.filter(m=> m.name.toLowerCase().includes(query)) : meds;
+  if(filtered.length === 0){
+    grid.innerHTML = '';
+    if(noResults) noResults.style.display = 'block';
+    return;
+  }
+  if(noResults) noResults.style.display = 'none';
+  grid.innerHTML = filtered.map(m=>`
+    <div class="med-card ${selectedMedicineIds.has(m.id)?'selected':''}" onclick="toggleMedicineSelect('${m.id}')" data-id="${m.id}">
+      <span class="med-check">✓</span>
+      ${m.photo ? `<img class="med-photo" src="${m.photo}">` : `<div class="med-photo-placeholder">💊</div>`}
+      <div class="med-name">${escapeHtml(m.name)}</div>
+      <div class="med-price">$${m.price}</div>
+    </div>`).join('');
+}
+function filterMedicines(){ renderMedicineList(); }
+function toggleMedicineSelect(id){
+  if(selectedMedicineIds.has(id)) selectedMedicineIds.delete(id);
+  else selectedMedicineIds.add(id);
+  const card = document.querySelector(`.med-card[data-id="${id}"]`);
+  if(card) card.classList.toggle('selected');
+  updateTotalPriceBar();
+}
+/* ==================== DELIVERY FEE — otomaatig, isticmaal xogta bajaaj_fares ====================
+   MUHIIM: marka bukaanku doorto degmadiisa, si otomaatig ah ayaa loo
+   xisaabiyaa qiimaha delivery-ga (isla xogta Bajaaj Muqdisho PDF 2026),
+   loona daraa wadarta lacagta — looma baahna app kale oo gaadiid ah. */
+function calcDeliveryFee(){
+  const degmada = document.getElementById('phDegmada').value;
+  if(!degmada) return { min:0, max:0, label:'' };
+  // Qiimo GAAR AH (special) — waa la hubiyaa marka hore, ka hor wax kale.
+  if(SPECIAL_FEES[degmada] !== undefined){
+    return { min:SPECIAL_FEES[degmada], max:SPECIAL_FEES[degmada], label:'Delivery — qiimo gaar ah' };
+  }
+  if(degmada === HOSPITAL_DEGMADA){
+    const fares = load(BJ_FARES_KEY, []);
+    const fare = fares.find(f=>f.degmada === HOSPITAL_DEGMADA);
+    return fare
+      ? { min:fare.gudahaMin, max:fare.gudahaMax, label:'Delivery gudaha degmada' }
+      : { min:1.00, max:1.50, label:'Delivery gudaha degmada (qiyaas caadi)' };
+  }
+  const FAR_FIXED_FEE = 3.50; // qiimo go'an (ma aha range) — degmooyinka aad u fog
+  if(FAR_DEGMOOYIN.has(degmada)){
+    return { min:FAR_FIXED_FEE, max:FAR_FIXED_FEE, label:'Delivery — degmo aad u fog' };
+  }
+  // Degmooyinka kale (dhow) — qiimo la yareeyay.
+  const fares = load(BJ_FARES_KEY, []);
+  const fare = fares.find(f=>f.degmada === HOSPITAL_DEGMADA);
+  return fare
+    ? { min:fare.dhowMin, max:fare.dhowMax, label:'Delivery — degmo kale' }
+    : { min:1.50, max:2.50, label:'Delivery — degmo kale (qiyaas caadi)' };
+}
+function updateDeliveryFee(){ updateTotalPriceBar(); }
+function updateTotalPriceBar(){
+  const meds = load(PH_MEDS_KEY, []);
+  const selected = meds.filter(m=>selectedMedicineIds.has(m.id));
+  const medTotal = selected.reduce((s,m)=>s+Number(m.price||0), 0);
+  const delivery = calcDeliveryFee();
+  const deliveryFee = delivery.max || 0; // isticmaal qiimaha ugu sarreeya (worst-case) si aan bukaanka loo yaraynin
+  const grandTotal = medTotal + deliveryFee;
+  const bar = document.getElementById('totalPriceBar');
+  const preview = document.getElementById('selectedMedsPreview');
+  const breakdown = document.getElementById('priceBreakdown');
+  if(grandTotal > 0){
+    bar.style.display = 'block';
+    document.getElementById('totalPriceValue').textContent = '$' + grandTotal;
+    let bLines = [];
+    if(medTotal > 0) bLines.push(`Dawooyinka: $${medTotal}`);
+    if(deliveryFee > 0) bLines.push(`🛺 ${delivery.label}: $${deliveryFee}`);
+    breakdown.textContent = bLines.join(' + ');
+    preview.style.display = 'flex';
+    preview.innerHTML = selected.map(m=>`
+      <div style="display:flex;align-items:center;gap:6px;background:var(--pharm-soft);border:1px solid #ccfbf1;border-radius:999px;padding:4px 10px 4px 4px;font-size:12px;">
+        ${m.photo ? `<img src="${m.photo}" style="width:22px;height:22px;object-fit:cover;border-radius:50%;">` : `<span style="font-size:14px;">💊</span>`}
+        <span style="font-weight:700;color:var(--pharm-deep);">${escapeHtml(m.name)}</span>
+      </div>`).join('');
+  } else {
+    bar.style.display = 'none';
+    preview.style.display = 'none';
+    preview.innerHTML = '';
+  }
+  return { selected, medTotal, deliveryFee, grandTotal };
+}
+
+let _rxImageBase64 = null;
+function handleRxUpload(event){
+  const file = event.target.files && event.target.files[0];
+  event.target.value = '';
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const MAX_DIM = 1000;
+      let w = img.width, h = img.height;
+      if(w > MAX_DIM || h > MAX_DIM){
+        const scale = MAX_DIM / Math.max(w, h);
+        w = Math.round(w*scale); h = Math.round(h*scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      _rxImageBase64 = canvas.toDataURL('image/jpeg', 0.75);
+      document.getElementById('phRxPreview').src = _rxImageBase64;
+      document.getElementById('phRxPreviewWrap').style.display = 'block';
+      document.getElementById('phUploadZone').style.display = 'none';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function clearRxUpload(){
+  _rxImageBase64 = null;
+  document.getElementById('phRxPreviewWrap').style.display = 'none';
+  document.getElementById('phRxPreview').src = '';
+  document.getElementById('phUploadZone').style.display = 'block';
+}
+function submitPharmacyOrder(){
+  const name = document.getElementById('phName').value.trim();
+  const phone = document.getElementById('phPhone').value.trim();
+  const degmada = document.getElementById('phDegmada').value;
+  const notes = document.getElementById('phNotes').value.trim();
+  if(!name || !phone){ toast("⚠️ Fadlan buuxi Magaca iyo Telefoonka."); return; }
+  const meds = load(PH_MEDS_KEY, []);
+  const selected = meds.filter(m=>selectedMedicineIds.has(m.id));
+  const medTotal = selected.reduce((s,m)=>s+Number(m.price||0), 0);
+  if(!_rxImageBase64 && selected.length === 0){
+    Swal.fire({ icon:'warning', title:'Wax Lama Dooran', text:'Fadlan doorash ugu yaraan hal dawo, AMA soo geli sawir cad oo warqadda dhakhtarku kuu qoray (prescription).' });
+    return;
+  }
+  // ===== Delivery fee — otomaatig ku daran (isticmaal xogta bajaaj_fares) =====
+  const delivery = calcDeliveryFee();
+  const deliveryFee = delivery.max || 0;
+  const total = medTotal + deliveryFee;
+  const order = {
+    id: uid("PH"), createdAt: new Date().toISOString(), name, phone, degmada, notes,
+    rxImage: _rxImageBase64, status: "Pending",
+    selectedMeds: selected.map(m=>({id:m.id, name:m.name, price:m.price, photo:m.photo||''})),
+    deliveryFee, totalPrice: total
+  };
+  const all = load(PH_ORDERS_KEY, []); all.unshift(order); save(PH_ORDERS_KEY, all);
+
+  // ===== USSD auto-dial — KALIYA haddii lacag la sugayo (dawo/delivery la sugayo).
+  //       Si toos ah, wax modal/su'aal ah lama muujiyo (isla habka booking-ga). =====
+  let confirmMsg = "Pharmacy-ga Baxnaano ayaa dib kuula soo xiriiri doona si ay kuugu keenaan dawada.";
+  if(total > 0){
+    const ussdCode = `*712*${USSD_PAY_NUMBER}*${total}#`;
+    const telUrl = 'tel:' + encodeURIComponent(ussdCode);
+    const dialAnchor = document.createElement('a');
+    dialAnchor.href = telUrl;
+    dialAnchor.style.display = 'none';
+    document.body.appendChild(dialAnchor);
+    dialAnchor.click();
+    setTimeout(()=>{ if(dialAnchor.parentNode) document.body.removeChild(dialAnchor); }, 500);
+    const feeNote = deliveryFee > 0 ? ` (dawo $${medTotal} + delivery $${deliveryFee})` : '';
+    confirmMsg = `Lacagta $${total}${feeNote} waa la wacayaa (USSD). Marka aad bixiso, dawadaada ayaa kuu la socon doonta.`;
+  }
+  document.getElementById('pharmacyConfirmMsg').textContent = confirmMsg;
+  document.getElementById('pharmacyFormWrap').style.display = 'none';
+  document.getElementById('pharmacyConfirmWrap').style.display = 'block';
+  toast("✅ Dalabkaaga dawada waa la diray!");
+}
+function resetPharmacyForm(){
+  document.getElementById('phName').value = '';
+  document.getElementById('phPhone').value = '';
+  document.getElementById('phDegmada').value = '';
+  document.getElementById('phNotes').value = '';
+  clearRxUpload();
+  selectedMedicineIds = new Set();
+  renderMedicineList();
+  updateTotalPriceBar();
+  document.getElementById('pharmacyFormWrap').style.display = 'block';
+  document.getElementById('pharmacyConfirmWrap').style.display = 'none';
+}
+
+/* ==================== ADMIN ==================== */
+function tryAdminLogin(){
+  const val = document.getElementById('adminPinInput').value;
+  const stored = load(ADMIN_PIN_KEY, "ANAANI321");
+  if(val === stored){
+    sessionStorage.setItem('ph_admin_logged','1');
+    document.getElementById('view-admin-login').classList.remove('active');
+    document.getElementById('view-admin-dashboard').classList.add('active');
+    renderAdminDashboard();
+    updateSyncUI();
+    retrySyncIfNeeded();
+    toast("✅ Admin login guuleystay!");
+  } else {
+    toast("⚠️ PIN khalad ah.");
+  }
+}
+function adminLogout(){
+  sessionStorage.removeItem('ph_admin_logged');
+  switchView('home');
+}
+const STATUS_COLORS = { Pending:'#f59e0b', Processing:'#3b82f6', Ready:'#8b5cf6', Completed:'#22c55e', Cancelled:'#ef4444' };
+function renderAdminDashboard(){
+  const orders = load(PH_ORDERS_KEY, []);
+  const total = orders.length;
+  const pending = orders.filter(o=>o.status==='Pending').length;
+  const processing = orders.filter(o=>o.status==='Processing'||o.status==='Ready').length;
+  const done = orders.filter(o=>o.status==='Completed').length;
+  document.getElementById('phStatTotal').textContent = total;
+  document.getElementById('phStatPending').textContent = pending;
+  document.getElementById('phStatProcessing').textContent = processing;
+  document.getElementById('phStatDone').textContent = done;
+
+  const chartWrap = document.getElementById('phChartWrap');
+  if(total === 0){
+    chartWrap.innerHTML = '';
+  } else {
+    const statuses = ['Pending','Processing','Ready','Completed','Cancelled'];
+    const counts = statuses.map(s=>orders.filter(o=>o.status===s).length);
+    const R = 42, C = 2*Math.PI*R;
+    let offset = 0;
+    const segments = statuses.map((s,i)=>{
+      const count = counts[i];
+      if(count === 0) return '';
+      const frac = count/total;
+      const len = frac * C;
+      const seg = `<circle cx="60" cy="60" r="${R}" fill="none" stroke="${STATUS_COLORS[s]}" stroke-width="14" stroke-dasharray="${len} ${C-len}" stroke-dashoffset="${-offset}" transform="rotate(-90 60 60)"></circle>`;
+      offset += len;
+      return seg;
+    }).join('');
+    const legend = statuses.filter((s,i)=>counts[i]>0).map(s=>`<div style="display:flex;align-items:center;gap:6px;font-size:12px;"><span style="width:9px;height:9px;border-radius:50%;background:${STATUS_COLORS[s]};display:inline-block;"></span>${s} (${orders.filter(o=>o.status===s).length})</div>`).join('');
+    chartWrap.innerHTML = `<svg width="120" height="120" viewBox="0 0 120 120">${segments}<text x="60" y="65" text-anchor="middle" font-size="20" font-weight="900" fill="#0b3d2e">${total}</text></svg><div style="display:flex;flex-direction:column;gap:6px;">${legend}</div>`;
+  }
+
+  const tbody = document.getElementById('pharmacyTableBody');
+  const empty = document.getElementById('pharmacyEmpty');
+  if(orders.length === 0){ tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = orders.map(o=>`<tr onclick="openPharmacyDetail('${o.id}')" style="cursor:pointer;border-bottom:1px solid var(--gray-100);"><td style="padding:9px 6px;"><b>${escapeHtml(o.name)}</b></td><td style="padding:9px 6px;">${escapeHtml(o.phone)}</td><td style="padding:9px 6px;">${fmtDate(o.createdAt)}</td><td style="padding:9px 6px;font-weight:800;color:var(--pharm-deep);">${o.totalPrice ? '$'+o.totalPrice : '-'}</td><td style="padding:9px 6px;"><span style="background:${STATUS_COLORS[o.status]||'#94a3b8'}22;color:${STATUS_COLORS[o.status]||'#64748b'};padding:3px 9px;border-radius:6px;font-size:11.5px;font-weight:700;">${o.status}</span></td><td style="padding:9px 6px;">${o.rxImage ? '📋' : ''}</td></tr>`).join('');
+}
+function openPharmacyDetail(id){
+  const order = load(PH_ORDERS_KEY, []).find(o=>o.id===id);
+  if(!order) return;
+  const medTotal = (order.selectedMeds||[]).reduce((s,m)=>s+Number(m.price||0),0);
+  const hasBreakdown = (order.selectedMeds && order.selectedMeds.length) || order.deliveryFee > 0;
+  const medsHtml = hasBreakdown ? `<div style="background:var(--pharm-soft);border-radius:10px;padding:12px;margin-bottom:12px;">
+    ${(order.selectedMeds||[]).length ? `<b style="font-size:12.5px;">Dawooyinka la doortay:</b>` : ''}
+    ${(order.selectedMeds||[]).map(m=>`<div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+      ${m.photo ? `<img src="${m.photo}" style="width:38px;height:38px;object-fit:cover;border-radius:8px;flex-shrink:0;">` : `<div style="width:38px;height:38px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">💊</div>`}
+      <span style="flex:1;font-size:13px;">${escapeHtml(m.name)}</span>
+      <b style="font-size:13px;">$${m.price}</b>
+    </div>`).join('')}
+    ${order.deliveryFee > 0 ? `<div style="display:flex;align-items:center;gap:10px;margin-top:8px;"><div style="width:38px;height:38px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🛺</div><span style="flex:1;font-size:13px;">Delivery (${escapeHtml(order.degmada||'')})</span><b style="font-size:13px;">$${order.deliveryFee}</b></div>` : ''}
+    <div style="display:flex;justify-content:space-between;font-weight:900;color:var(--pharm-deep);margin-top:10px;padding-top:8px;border-top:1px solid #ccfbf1;"><span>Wadarta</span><span>$${order.totalPrice}</span></div>
+  </div>` : '';
+  document.getElementById('pharmacyDetailContent').innerHTML = `
+    <h3 style="color:var(--pharm-deep);margin-bottom:2px;">${escapeHtml(order.name)}</h3>
+    <p class="muted" style="margin-bottom:14px;">${escapeHtml(order.phone)} · ${escapeHtml(order.degmada||'-')} · ${new Date(order.createdAt).toLocaleString()}</p>
+    ${medsHtml}
+    ${order.notes ? `<div style="background:var(--pharm-soft);border-radius:10px;padding:12px;margin-bottom:12px;"><b style="font-size:12.5px;">Faahfaahin:</b><p style="font-size:13.5px;margin-top:4px;">${escapeHtml(order.notes)}</p></div>` : ''}
+    ${order.rxImage ? `<img src="${order.rxImage}" style="width:100%;border-radius:10px;border:1.5px solid var(--gray-200);margin-bottom:14px;">` : ''}
+    <label>Beddel Xaaladda</label>
+    <select id="pharmacyStatusSelect" onchange="updatePharmacyStatus('${order.id}', this.value)" style="margin-bottom:14px;">${['Pending','Processing','Ready','Completed','Cancelled'].map(s=>`<option ${order.status===s?'selected':''}>${s}</option>`).join('')}</select>
+    <button class="ghost-btn" style="width:100%;padding:12px;" onclick="closePharmacyDetail()">Xir</button>`;
+  document.getElementById('pharmacyDetailModal').style.display = 'flex';
+}
+function closePharmacyDetail(){ document.getElementById('pharmacyDetailModal').style.display = 'none'; }
+function updatePharmacyStatus(id, status){
+  const all = load(PH_ORDERS_KEY, []);
+  const order = all.find(o=>o.id===id);
+  if(order){ order.status = status; save(PH_ORDERS_KEY, all); renderAdminDashboard(); toast("✅ Xaaladda dalabka waa la cusboonaysiiyay."); }
+}
+
+/* ==================== DAWOOYINKA — maamulka (admin) ==================== */
+let _medPhotoBase64 = null;
+function handleMedPhotoUpload(event){
+  const file = event.target.files && event.target.files[0];
+  event.target.value = '';
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const MAX_DIM = 700;
+      let w = img.width, h = img.height;
+      if(w > MAX_DIM || h > MAX_DIM){
+        const scale = MAX_DIM / Math.max(w, h);
+        w = Math.round(w*scale); h = Math.round(h*scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      _medPhotoBase64 = canvas.toDataURL('image/jpeg', 0.85);
+      document.getElementById('medPhotoPreview').src = _medPhotoBase64;
+      document.getElementById('medPhotoPreviewWrap').style.display = 'block';
+      document.getElementById('medUploadZone').style.display = 'none';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function clearMedPhoto(){
+  _medPhotoBase64 = null;
+  document.getElementById('medPhotoPreviewWrap').style.display = 'none';
+  document.getElementById('medPhotoPreview').src = '';
+  document.getElementById('medUploadZone').style.display = 'block';
+}
+function addMedicine(){
+  const name = document.getElementById('medName').value.trim();
+  const price = parseFloat(document.getElementById('medPrice').value);
+  if(!name || isNaN(price) || price < 0){ toast("⚠️ Fadlan buuxi magaca iyo qiimaha dawada si sax ah."); return; }
+  const med = { id: uid("MED"), createdAt: new Date().toISOString(), name, price, photo: _medPhotoBase64 || '' };
+  const all = load(PH_MEDS_KEY, []); all.unshift(med); save(PH_MEDS_KEY, all);
+  document.getElementById('medName').value = '';
+  document.getElementById('medPrice').value = '';
+  clearMedPhoto();
+  renderAdminMedsList();
+  toast("✅ Dawada waa lagu daray liiska!");
+}
+function renderAdminMedsList(){
+  const meds = load(PH_MEDS_KEY, []);
+  const grid = document.getElementById('adminMedsGrid');
+  const empty = document.getElementById('adminMedsEmpty');
+  if(!grid) return;
+  if(meds.length === 0){ grid.innerHTML=''; if(empty) empty.style.display='block'; return; }
+  if(empty) empty.style.display='none';
+  grid.innerHTML = meds.map(m=>`
+    <div class="med-card" style="cursor:default;">
+      ${m.photo ? `<img class="med-photo" src="${m.photo}">` : `<div class="med-photo-placeholder">💊</div>`}
+      <div class="med-name">${escapeHtml(m.name)}</div>
+      <div class="med-price">$${m.price}</div>
+      <button class="ghost-btn" style="width:100%;margin-top:6px;padding:4px;font-size:11px;color:var(--danger);border-color:#fecaca;" onclick="deleteMedicine('${m.id}')">🗑️ Tirtir</button>
+    </div>`).join('');
+}
+function deleteMedicine(id){
+  const all = load(PH_MEDS_KEY, []).filter(m=>m.id!==id);
+  save(PH_MEDS_KEY, all);
+  renderAdminMedsList();
+  toast("✅ Dawada waa laga saaray liiska.");
+}
+
+/* ==================== PWA — Service Worker + Install ==================== */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(err=> console.warn('SW registration failed', err));
+  });
+  // Marka service-worker CUSUB uu qabsado — dib u shub bogga si otomaatig
+  // ah ONE TIME kaliya, si user-ku uusan u baahnayn laba jeer refresh.
+  let _swReloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+    if(_swReloaded) return;
+    _swReloaded = true;
+    window.location.reload();
+  });
+}
+let deferredInstallPrompt = null;
+const isIOSDevicePWA = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+const isStandaloneApp = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  if(!isStandaloneApp) document.getElementById('installBtn').style.display = 'inline-flex';
+});
+if(isIOSDevicePWA && !isStandaloneApp){
+  document.getElementById('installBtn').style.display = 'inline-flex';
+}
+function triggerInstall(){
+  if(deferredInstallPrompt){
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then(()=>{ deferredInstallPrompt = null; document.getElementById('installBtn').style.display = 'none'; });
+  } else if(isIOSDevicePWA){
+    Swal.fire({ icon:'info', title:'Ku Rakib App-ka', html:'<div style="text-align:left;font-size:13.5px;line-height:1.8;">1. Riix badhanka "Share" (⬆️) ee Safari<br>2. Dooro "Add to Home Screen"<br>3. Riix "Add"</div>' });
+  }
+}
+
+/* ==================== INIT ==================== */
+populateDegmadaSelect();
+renderMedicineList();
+DB.init().then(()=>{ renderMedicineList(); });
+</script>
+</body>
+</html>
