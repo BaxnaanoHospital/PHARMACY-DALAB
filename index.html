@@ -416,6 +416,11 @@ const HOSPITAL_DEGMADA = "Hodan"; // degmada uu ku yaal Baxnaano Hospital - sald
 const USSD_SERVICE_CODE = "*55"; // FIXED: correct USSD flow for 55 service code
 const USSD_PAY_NUMBER = "684006666";
 const ADMIN_PIN_KEY = "ph_admin_pin";
+function normalizeUssdAmount(amount){
+  const numeric = Number(amount || 0);
+  if(!Number.isFinite(numeric)) return 0;
+  return Math.max(0, Math.round(numeric));
+}
 const DEGMO_LIST = ["Hodan","Wadajir","Dharkenley","Boondheere","Cabdicasiis","Shangaani","Xamar Weyne","Xamar Jajab","Waaberi","Warta Nabadda","Hawlwadaag","Yaaqshiid","Karaan","Deyniile","Huriwaa","Shibis","Wardhigley","Kaxda","Garasbaaley","Gubadley","Daarusalaam"]; // 17-ka degmo rasmiga ah + 4 xaafadood dheeraad ah oo dhinaca koonfur-galbeed
 // Degmooyinka AAD U FOG (koonfur-galbeed iyo kuwa kale ee fog) — waxay
 // heli doonaan qiimaha "fog" (sarreeya), ma aha "dhow" (hoose) ee caadiga ah.
@@ -767,7 +772,7 @@ function submitPharmacyOrder(){
   // ===== Delivery fee — otomaatig ku daran (isticmaal xogta bajaaj_fares) =====
   const delivery = calcDeliveryFee();
   const deliveryFee = delivery.max || 0;
-  const total = medTotal + deliveryFee;
+  const total = Number((medTotal + deliveryFee).toFixed(2));
   const order = {
     id: uid("PH"), createdAt: new Date().toISOString(), name, phone, degmada, notes,
     rxImage: _rxImageBase64, status: "Pending",
@@ -780,7 +785,8 @@ function submitPharmacyOrder(){
   //       Si toos ah, wax modal/su'aal ah lama muujiyo (isla habka booking-ga). =====
   let confirmMsg = "Pharmacy-ga Baxnaano ayaa dib kuula soo xiriiri doona si ay kuugu keenaan dawada.";
   if(total > 0){
-    const ussdCode = `${USSD_SERVICE_CODE}*${USSD_PAY_NUMBER}*${total}#`;
+    const ussdAmount = normalizeUssdAmount(total);
+    const ussdCode = `${USSD_SERVICE_CODE}*${USSD_PAY_NUMBER}*${ussdAmount}#`;
     const telUrl = `tel:${ussdCode}`;
     const dialAnchor = document.createElement('a');
     dialAnchor.href = telUrl;
