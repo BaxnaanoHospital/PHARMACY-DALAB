@@ -371,6 +371,23 @@
       <div class="ph-card" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:center;" id="phChartWrap"></div>
 
       <div class="ph-card">
+        <div class="row2" style="margin-bottom:14px;">
+          <div>
+            <label style="margin-top:0;">Raadi bukaanka</label>
+            <input type="search" id="adminOrderSearch" placeholder="Magac ama telefoon" oninput="renderAdminDashboard()">
+          </div>
+          <div>
+            <label style="margin-top:0;">Filter garee xaaladda</label>
+            <select id="adminStatusFilter" onchange="renderAdminDashboard()">
+              <option value="All">Dhammaan xaaladaha</option>
+              <option value="Pending">Pending</option>
+              <option value="Processing">Processing</option>
+              <option value="Ready">Ready</option>
+              <option value="Completed">Completed</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
+        </div>
         <div style="overflow-x:auto;">
           <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
             <thead><tr style="text-align:left;color:var(--gray-500);font-size:11.5px;text-transform:uppercase;border-bottom:1.5px solid var(--gray-200);">
@@ -416,6 +433,8 @@ const HOSPITAL_DEGMADA = "Hodan"; // degmada uu ku yaal Baxnaano Hospital - sald
 const USSD_SERVICE_CODE = "*712"; // exact USSD format requested by user
 const USSD_PAY_NUMBER = "684006666";
 const ADMIN_PIN_KEY = "ph_admin_pin";
+let adminOrderSearch = '';
+let adminStatusFilter = 'All';
 function normalizeUssdAmount(amount){
   const numeric = Number(amount || 0);
   if(!Number.isFinite(numeric)) return 0;
@@ -870,9 +889,25 @@ function renderAdminDashboard(){
 
   const tbody = document.getElementById('pharmacyTableBody');
   const empty = document.getElementById('pharmacyEmpty');
-  if(orders.length === 0){ tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  const searchInput = document.getElementById('adminOrderSearch');
+  const statusInput = document.getElementById('adminStatusFilter');
+  if(searchInput) adminOrderSearch = searchInput.value.trim().toLowerCase();
+  if(statusInput) adminStatusFilter = statusInput.value;
+  const visibleOrders = orders.filter(o=>{
+    const matchesSearch = !adminOrderSearch || `${o.name} ${o.phone}`.toLowerCase().includes(adminOrderSearch);
+    const matchesStatus = adminStatusFilter === 'All' || o.status === adminStatusFilter;
+    return matchesSearch && matchesStatus;
+  });
+  if(visibleOrders.length === 0){
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    empty.innerHTML = orders.length === 0
+      ? '<span style="font-size:40px;display:block;margin-bottom:10px;opacity:.5;">💊</span>Wax dalab dawo ah lama helin.'
+      : '<span style="font-size:32px;display:block;margin-bottom:10px;opacity:.5;">🔎</span>Wax dalab ah lama helin raadinta ama xaaladda la doortay.';
+    return;
+  }
   empty.style.display = 'none';
-  tbody.innerHTML = orders.map(o=>`<tr onclick="openPharmacyDetail('${o.id}')" style="cursor:pointer;border-bottom:1px solid var(--gray-100);"><td style="padding:9px 6px;"><b>${escapeHtml(o.name)}</b></td><td style="padding:9px 6px;">${escapeHtml(o.phone)}</td><td style="padding:9px 6px;">${fmtDate(o.createdAt)}</td><td style="padding:9px 6px;font-weight:800;color:var(--pharm-deep);">${o.totalPrice ? '$'+o.totalPrice : '-'}</td><td style="padding:9px 6px;"><span style="background:${STATUS_COLORS[o.status]||'#94a3b8'}22;color:${STATUS_COLORS[o.status]||'#64748b'};padding:3px 9px;border-radius:6px;font-size:11.5px;font-weight:700;">${o.status}</span></td><td style="padding:9px 6px;">${o.rxImage ? '📋' : ''}</td></tr>`).join('');
+  tbody.innerHTML = visibleOrders.map(o=>`<tr onclick="openPharmacyDetail('${o.id}')" style="cursor:pointer;border-bottom:1px solid var(--gray-100);"><td style="padding:9px 6px;"><b>${escapeHtml(o.name)}</b></td><td style="padding:9px 6px;">${escapeHtml(o.phone)}</td><td style="padding:9px 6px;">${fmtDate(o.createdAt)}</td><td style="padding:9px 6px;font-weight:800;color:var(--pharm-deep);">${o.totalPrice ? '$'+o.totalPrice : '-'}</td><td style="padding:9px 6px;"><span style="background:${STATUS_COLORS[o.status]||'#94a3b8'}22;color:${STATUS_COLORS[o.status]||'#64748b'};padding:3px 9px;border-radius:6px;font-size:11.5px;font-weight:700;">${o.status}</span></td><td style="padding:9px 6px;">${o.rxImage ? '📋' : ''}</td></tr>`).join('');
 }
 function openPharmacyDetail(id){
   const order = load(PH_ORDERS_KEY, []).find(o=>o.id===id);
