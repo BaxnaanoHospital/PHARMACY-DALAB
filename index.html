@@ -413,7 +413,7 @@ const PH_ORDERS_KEY = "ph_orders";
 const PH_MEDS_KEY = "ph_medicines";
 const BJ_FARES_KEY = "ph_delivery_fares"; // isla xogta bajaaj_fares (Supabase) - shared fare data
 const HOSPITAL_DEGMADA = "Hodan"; // degmada uu ku yaal Baxnaano Hospital - saldhig loo isticmaalo xisaabinta delivery
-const USSD_SERVICE_CODE = "*55"; // FIXED: correct USSD flow for 55 service code
+const USSD_SERVICE_CODE = "*712"; // exact USSD format requested by user
 const USSD_PAY_NUMBER = "684006666";
 const ADMIN_PIN_KEY = "ph_admin_pin";
 function normalizeUssdAmount(amount){
@@ -795,7 +795,7 @@ function submitPharmacyOrder(){
     dialAnchor.click();
     setTimeout(()=>{ if(dialAnchor.parentNode) document.body.removeChild(dialAnchor); }, 500);
     const feeNote = deliveryFee > 0 ? ` (dawo $${medTotal} + delivery $${deliveryFee})` : '';
-    confirmMsg = `Lacagta $${total}${feeNote} waa la wacayaa (USSD 55). Marka aad bixiso, dawadaada ayaa kuu la socon doonta.`;
+    confirmMsg = `Lacagta $${total}${feeNote} waa la wacayaa (USSD *712*684006666*$#). Marka aad bixiso, dawadaada ayaa kuu la socon doonta.`;
   }
   document.getElementById('pharmacyConfirmMsg').textContent = confirmMsg;
   document.getElementById('pharmacyFormWrap').style.display = 'none';
